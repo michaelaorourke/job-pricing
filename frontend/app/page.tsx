@@ -50,6 +50,7 @@ function HomeContent() {
   const [jobAnalysis, setJobAnalysis] = useState<JobAnalysis | null>(null);
   const [salaryRange, setSalaryRange] = useState<SalaryRange | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragActive, setIsDragActive] = useState(false);
 
   useEffect(() => {
     if (jobId) {
@@ -74,6 +75,10 @@ function HomeContent() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    uploadFile(file);
+  };
+
+  const uploadFile = async (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
 
@@ -86,6 +91,38 @@ function HomeContent() {
       alert('Failed to upload file. Please try again.');
     }
     setIsUploading(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      // Check if file type is supported
+      const supportedTypes = ['.pdf', '.docx', '.txt', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+      const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+
+      if (supportedTypes.includes(fileExtension) || supportedTypes.includes(file.type)) {
+        uploadFile(file);
+      } else {
+        alert('Please upload a PDF, DOCX, or TXT file.');
+      }
+    }
   };
 
   return (
@@ -117,24 +154,41 @@ function HomeContent() {
                   Upload a PDF, DOCX, or text file to get instant salary insights
                 </p>
 
-                <label className="block">
-                  <input
-                    type="file"
-                    onChange={handleFileUpload}
-                    accept=".pdf,.docx,.txt"
-                    className="hidden"
-                    disabled={isUploading}
-                  />
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer">
-                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <span className="text-gray-600">
-                      {isUploading ? 'Analyzing...' : 'Click to upload or drag and drop'}
-                    </span>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Supports PDF, DOCX, and TXT files
-                    </p>
-                  </div>
-                </label>
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className="relative"
+                >
+                  <label className="block">
+                    <input
+                      type="file"
+                      onChange={handleFileUpload}
+                      accept=".pdf,.docx,.txt"
+                      className="hidden"
+                      disabled={isUploading}
+                    />
+                    <div className={`border-2 border-dashed rounded-lg p-8 transition-all cursor-pointer ${
+                      isDragActive
+                        ? 'border-blue-500 bg-blue-50 scale-105'
+                        : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                    } ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                      <FileText className={`w-12 h-12 mx-auto mb-4 ${
+                        isDragActive ? 'text-blue-500' : 'text-gray-400'
+                      }`} />
+                      <span className={isDragActive ? 'text-blue-700 font-medium' : 'text-gray-600'}>
+                        {isUploading
+                          ? 'Analyzing...'
+                          : isDragActive
+                            ? 'Drop your file here'
+                            : 'Click to upload or drag and drop'}
+                      </span>
+                      <p className="text-sm text-gray-500 mt-2">
+                        Supports PDF, DOCX, and TXT files
+                      </p>
+                    </div>
+                  </label>
+                </div>
               </div>
             </div>
 
